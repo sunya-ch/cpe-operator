@@ -1,0 +1,31 @@
+apiVersion: cpe.cogadvisor.io/v1
+kind: BenchmarkOperator
+metadata:
+  name: pytorch-job-operator
+  namespace: kubeflow
+spec:
+  apiVersion: kubeflow.org/v1
+  kind: PyTorchJob
+  adaptor: kubeflow
+  crd:
+    host: https://raw.githubusercontent.com/kubeflow/training-operator/master/manifests/base/crds
+    paths:
+    - /kubeflow.org_pytorchjobs.yaml
+  deploySpec:
+    namespace: kubeflow
+---
+apiVersion: cpe.cogadvisor.io/v1
+kind: BenchmarkOperator
+metadata:
+  name: tf-job-operator
+  namespace: kubeflow
+spec:
+  apiVersion: kubeflow.org/v1
+  kind: TFJob
+  adaptor: kubeflow
+  crd:
+    host: https://raw.githubusercontent.com/kubeflow/training-operator/master/manifests/base/crds
+    paths:
+    - /kubeflow.org_tfjobs.yaml
+  deploySpec:
+    namespace: kubeflow

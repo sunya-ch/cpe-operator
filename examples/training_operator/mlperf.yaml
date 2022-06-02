@@ -1,0 +1,95 @@
+apiVersion: cpe.cogadvisor.io/v1
+kind: Benchmark
+metadata:
+  name: image-inference-tfjob
+  namespace: mlperf 
+spec:
+  benchmarkOperator:
+    name:  tf-job-operator
+    namespace: kubeflow
+  benchmarkSpec: |
+    tfReplicaSpecs:
+      Worker:
+        replicas: 1 
+        restartPolicy: OnFailure
+        template:
+          spec:
+            securityContext:
+              runAsUser: 1000870000 
+            dnsPolicy: ClusterFirst
+            volumes:
+              - persistentVolumeClaim:
+                  claimName: mlperf-pvc  
+                name: data
+              - persistentVolumeClaim:
+                  claimName: mlperf-model-pvc
+                name: model
+              - persistentVolumeClaim:
+                  claimName: mlperf-output-pvc
+                name: output
+            containers:
+              - name: tensorflow
+                image: res-cpe-team-docker-local.artifactory.swg-devops.com/mlperf/mlperf-image-class:latest 
+                imagePullPolicy: Always
+                imagePullSecrets:
+                  - name: res-cpe-team-docker-local
+                env:
+                  - name: MODEL_DIR
+                    value: /model
+                  - name: DATA_DIR
+                    value: /data/imagenet/ILSVRC2012_img_val
+                  - name: OUTPUT_DIR
+                    value: /output
+                  - name: DATASET
+                    value: imagenet
+                  - name: BACKEND
+                    value: {{ .backend }}
+                  - name: MODEL_TYPE
+                    value: {{ .model }}
+                  - name: DEVICE
+                    value: {{ index .device 0 }}
+                  - name: SCENARIO
+                    value: MultiStream
+                command:
+                  - tail
+                  - "-f"
+                  - "/dev/null"
+                volumeMounts:
+                  - mountPath: /data
+                    name: data
+                    readOnly: true
+                  - mountPath: /model
+                    name: model
+                    readOnly: true
+                  - mountPath: /output
+                    name: output
+                {{ if eq (index .device 0) "gpu" -}}
+                resources:
+                  limits:
+                    nvidia.com/gpu: {{ index .device 1 }}
+                {{ end -}}
+  repetition: 1
+  iterationSpec:
+    sequential: true
+    minimize: true
+    iterations:
+    - name: model
+      values:
+      - "resnet50"
+      - "retinanet"
+      - "mobilenet"
+      - "ssd-mobilenet"
+      - "ssd-resnet34"
+    - name: device
+      values:
+      - "gpu;1"
+      - "gpu;4"
+      - "gpu;8"
+    - name: backend
+      - "tf"
+      - "onnxruntime"
+      - "pytorch"
+      - "tflite"
+      - "tvm-onnx"
+      - "tvm-pytorch"
+  parserKey: mlperf
