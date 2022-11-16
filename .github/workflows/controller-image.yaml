@@ -3,6 +3,7 @@ name: Build and push controller
 on:
   push:
     paths:
+      - .github/workflows/**
       - controllers/**
       - api/**
       - ./main.go
@@ -19,7 +20,7 @@ jobs:
   build-push-controller:
     runs-on: ubuntu-latest
     env:
-      IMAGE_NAME: ghcr.io/${{ github.repository }}/cpe/operator-controller
+      IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/cpe-operator
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2

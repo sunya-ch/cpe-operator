@@ -3,6 +3,7 @@ name: Build and push parser
 on:
   push:
     paths:
+      - .github/workflows/**
       - cpe-parser/**
 
 env:
@@ -12,7 +13,7 @@ jobs:
   build-push-parser:
     runs-on: ubuntu-latest
     env:
-      IMAGE_NAME: ghcr.io/${{ github.repository }}/cpe/parser
+      IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/cpe-parser
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
