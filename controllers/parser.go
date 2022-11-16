@@ -49,6 +49,7 @@ type Response struct {
 
 var PUSH_URL string = os.Getenv("PARSER_SERVICE") + "/push"
 var PARSE_URL string = os.Getenv("PARSER_SERVICE") + "/parse"
+var PARSE_RAW_URL string = os.Getenv("PARSER_SERVICE") + "/raw-parse"
 
 const (
 	reqHeader = "application/json; charset=utf-8"
@@ -126,7 +127,7 @@ func parseRawLog(parser string, logValue []byte) (Response, error) {
 	if err != nil {
 		return Response{}, err
 	} else {
-		res, err := http.Post(PUSH_URL, reqHeader, bytes.NewBuffer(jsonReq))
+		res, err := http.Post(PARSE_RAW_URL, reqHeader, bytes.NewBuffer(jsonReq))
 		if err != nil {
 			return Response{}, err
 		}
