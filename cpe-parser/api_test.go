@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache2.0
  */
 
- package main
+package main
 
 //////////////////////////////////////////////
 // Test handler function
@@ -38,6 +38,13 @@ func getSampleLogSpec() cpe.LogSpec {
 	return cpeLog
 }
 
+func getSampleRawLog() cpe.LogSpec {
+	spec, _ := json.Marshal(secret.TPCCSpecData)
+	var cpeLog cpe.LogSpec
+	json.Unmarshal(spec, &cpeLog)
+	return cpeLog
+}
+
 func makeRequest(t *testing.T, path string, handlerFunc func(http.ResponseWriter, *http.Request)) cpe.Response {
 	secret.Setenvs()
 	jsonReq, err := json.Marshal(logSpec)
@@ -59,11 +66,42 @@ func makeRequest(t *testing.T, path string, handlerFunc func(http.ResponseWriter
 	return response
 }
 
+func makeRawRequest(t *testing.T, path string, handlerFunc func(http.ResponseWriter, *http.Request)) cpe.Response {
+	secret.Setenvs()
+	podLogs, err := readSamplePodLog()
+	assert.Nil(t, err)
+	rawLog := cpe.RawLog{
+		Parser:   logSpec.Parser,
+		LogValue: podLogs,
+	}
+	jsonReq, err := json.Marshal(rawLog)
+	assert.Nil(t, err)
+	req, err := http.NewRequest("PUT", path, bytes.NewBuffer(jsonReq))
+	assert.Nil(t, err)
+	req.Header.Set("Content-Type", "application/json; charset=utf-8")
+	res := httptest.NewRecorder()
+	handler := http.HandlerFunc(handlerFunc)
+	handler.ServeHTTP(res, req)
+	assert.Equal(t, http.StatusOK, res.Code)
+	body, _ := ioutil.ReadAll(res.Body)
+	var response cpe.Response
+	json.Unmarshal(body, &response)
+	assert.Equal(t, response.Status, "OK")
+	if response.Status != "OK" {
+		fmt.Printf("%s\n", string(body))
+	}
+	return response
+}
+
+func readSamplePodLog() ([]byte, error) {
+	podLogFileName := fmt.Sprintf("parser/sample/%s_pod_log.log", logSpec.BenchmarkName)
+	return ioutil.ReadFile(podLogFileName)
+}
+
 func putSampleLog(t *testing.T) error {
 	cos := common.NewCOS()
 	keyName := fmt.Sprintf("%s/%s/%s/%s.log", logSpec.BenchmarkName, logSpec.ClusterID, logSpec.JobName, logSpec.PodName)
-	podLogFileName := fmt.Sprintf("parser/%s_pod_log.log", logSpec.BenchmarkName)
-	podLogs, err := ioutil.ReadFile(podLogFileName)
+	podLogs, err := readSamplePodLog()
 	assert.Nil(t, err)
 	return common.PutLog(cos, keyName, podLogs)
 }
@@ -88,5 +126,12 @@ func TestReqPushValue(t *testing.T) {
 	if response.Status == "OK" {
 		fmt.Printf("Push Response: %s\n", string(response.Message))
 		fmt.Printf("Performance Key: %s, Performance Value: %.2f\n", response.PerformanceKey, response.PerformanceValue)
+	}
+}
+
+func TestReqRawParse(t *testing.T) {
+	response := makeRawRequest(t, "/raw-parse", cpe.ReqRawParse)
+	if response.Status == "OK" {
+		fmt.Printf("Parse Response: %v\n", response)
 	}
 }
