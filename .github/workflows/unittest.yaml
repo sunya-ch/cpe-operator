@@ -4,7 +4,7 @@ on:
   pull_request:
   push:
     paths:
-      - controller/**
+      - controllers/**
       - api/**
       - ./main.go
       - ./go.mod
@@ -30,7 +30,5 @@ jobs:
       - name: Tidy
         run: |
           go mod tidy
-      - name: Make bundle
-        run: make bundle
       - name: Test Controller
         run: make test

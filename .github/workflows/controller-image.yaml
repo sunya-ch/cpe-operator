@@ -3,7 +3,7 @@ name: Build and push controller
 on:
   push:
     paths:
-      - controller/**
+      - controllers/**
       - api/**
       - ./main.go
       - ./go.mod
