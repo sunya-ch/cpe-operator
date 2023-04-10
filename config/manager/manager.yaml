@@ -3,6 +3,7 @@ kind: Namespace
 metadata:
   labels:
     control-plane: controller-manager
+    openshift.io/cluster-monitoring: "true"
   name: system
 ---
 apiVersion: apps/v1
@@ -29,7 +30,7 @@ spec:
         - name: PARSER_SERVICE
           value: http://cpe-operator-cpe-parser.cpe-operator-system
         - name: CLUSTER_ID
-          value: cpang
+          value: default
         - name: OPERATOR_NAMESPACE
           valueFrom:
             fieldRef:

@@ -66,8 +66,8 @@ spec:
                             type: string
                           type: array
                       required:
-                      - location
                       - name
+                      - values
                       type: object
                     type: array
                   iterations:
@@ -83,8 +83,8 @@ spec:
                             type: string
                           type: array
                       required:
-                      - location
                       - name
+                      - values
                       type: object
                     type: array
                   minimize:

@@ -25,7 +25,7 @@ spec:
               - "2"
               - /osu-micro-benchmarks-5.6.3/mpi/pt2pt/osu_latency
               - -m
-              - "4194304"
+              - "{{ .maxsize }}"
             imagePullSecrets:
             - name: res-cpe-team-docker-local
             nodeSelector:
@@ -57,7 +57,8 @@ spec:
     minimize: true
     iterations:
       - name: maxsize
-        location: ".mpiReplicaSpecs.Launcher.template.spec.containers[0].command[6]"
+        values:
+        - "4194304"
     nodeSelection:
       location: ".mpiReplicaSpecs.Worker.template.spec.nodeSelector"
       values:

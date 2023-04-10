@@ -27,7 +27,7 @@ spec:
             - name: OMP_NUM_THREADS
               value: "1"
             - name: MAX_SCALE
-              value: "2"
+              value: {{ .maxscale }}
         imagePullSecrets:
         - name: res-cpe-team-docker-local
   trackBuildConfigs:
@@ -37,8 +37,8 @@ spec:
   iterationSpec:
     iterations:
     - name: maxscale
-      location: ".template.spec.containers[0].env[name=MAX_SCALE].value"
       values:
+      - "2"
       - "4"
       - "8"
   parserKey: default

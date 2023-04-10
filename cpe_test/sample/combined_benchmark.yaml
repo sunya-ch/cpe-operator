@@ -16,22 +16,14 @@ spec:
           env:
           - name: TIMEOUT
             value: 60s
+          - name: STRESSOR
+            value: {{ index .stressor 0 }}
+          - name: STRESS_LOAD
+            value: "{{ index .stressor 1 }}"
           command:
           - /stress-ng
-          {{ if .cpu -}}
-          - --cpu
-          - "{{ .cpu }}"
-          {{ end -}}
-          {{ if .io -}}
-          - --io
-          - "{{ .io }}"
-          {{ end -}}
-          {{ if .vm -}}
-          - --vm
-          - "{{ index .vm 0 }}"
-          - --vm_bytes
-          - "{{ index .vm 1 }}"
-          {{ end -}}
+          - --$(STRESSOR)
+          - $(STRESS_LOAD)
           - --timeout
           - $(TIMEOUT)
           - --metrics-brief
@@ -41,11 +33,9 @@ spec:
   interval: 5
   iterationSpec:
     iterations:
-    - name: cpu
+    - name: stressor
       values:
-      - "4"
-    - name: io
-      - "4"
-    - name: vm
-      - "1;1G"
+      - "cpu;4"
+      - "io;4"
+      - "memcpy;4"
     sequential: true

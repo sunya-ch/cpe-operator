@@ -55,8 +55,8 @@ type NodeSelectionSpec struct {
 // Iteration Definition
 type IterationItem struct {
 	Name     string   `json:"name"`
-	Location string   `json:"location"`
-	Values   []string `json:"values,omitempty"`
+	Location string   `json:"location,omitempty"`
+	Values   []string `json:"values"`
 }
 
 type BenchmarkResultItem struct {

@@ -50,7 +50,7 @@ spec:
           - name: OUT_DIR
             value: "/dev/shm/codait_nlp/"
           - name: TOKENIZERS_PARALLELISM
-            value: "true"
+            value: {{ .parallelism }}
           - name: OPENBLAS_NUM_THREADS
             value: "1"
           - name: MKL_NUM_THREADS
@@ -62,13 +62,13 @@ spec:
           - name: NUMEXPR_NUM_THREADS
             value: "1"
           - name: NRUNS_SERIAL
-            value: "1"
+            value: {{ .nserial }}
           - name: NRUNS_DPARALLEL
             value: "10"
           - name: NDOCS_INPUT
             value: "1000"
           - name: MAX_SCALE
-            value: "8"
+            value: {{ .maxscale }}
         volumes:
         - name: dshm
           emptyDir:
@@ -78,12 +78,14 @@ spec:
     sequential: true
     configurations:
     - name: parallelism
-      location: ".template.spec.containers[0].env[name=TOKENIZERS_PARALLELISM].value"
       values:
+      - "true"
       - "false"
     iterations:
     - name: maxscale
-      location: ".template.spec.containers[0].env[name=MAX_SCALE].value"
+      values:
+      - "8"
     - name: nserial
-      location: ".template.spec.containers[0].env[name=NRUNS_SERIAL].value"
+      values:
+      - "1"
   parserKey: codait

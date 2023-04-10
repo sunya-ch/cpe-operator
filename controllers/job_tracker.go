@@ -317,7 +317,7 @@ func (r *JobTracker) ProcessJobQueue() {
 					r.Log.Info(fmt.Sprintf("PutLog Error #%v, parse raw log", err))
 					response, err = parseRawLog(parserKey, logBytes)
 				} else {
-					r.Log.Info(fmt.Sprintf("Parse remote put log"))
+					r.Log.Info("Parse remote put log")
 					response, err = parseAndPushLog(instance, benchmarkName, jobName, podName, parserKey, constLabels)
 				}
 				r.Log.Info(fmt.Sprintf("Response: %v", response))

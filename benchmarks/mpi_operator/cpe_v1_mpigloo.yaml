@@ -28,13 +28,13 @@ spec:
               - "2"
               - /benchmark
               - --threads
-              - $(THREADS)
+              - {{ .threads }}
               - --transport
               - tcp
               - --tcp-device
-              - $(TCPDEVICE)
+              - {{ .dev }}
               - --no-verify
-              - $(BENCHMARK)
+              - {{ .test }}
             imagePullSecrets:
             - name: gloo-icr-io
       Worker:
@@ -65,7 +65,6 @@ spec:
     sequential: true
     configurations:
       - name: test
-        location: ".mpiReplicaSpecs.Launcher.template.spec.containers[0].env[name=BENCHMARK].value"
         values:
         - allreduce_ring
         - allreduce_ring_chunked
@@ -73,13 +72,11 @@ spec:
         - allreduce_bcube
     iterations:
       - name: threads
-        location: ".mpiReplicaSpecs.Launcher.template.spec.containers[0].env[name=THREADS].value"
         values:
         - "2"
         - "4"
         - "8"
       - name: dev
-        location: ".mpiReplicaSpecs.Launcher.template.spec.containers[0].env[name=TCPDEVICE].value"
         values:
         - net1-0,net1-1,net1-2,net1-3
         - net1-0,net1-1,net1-2

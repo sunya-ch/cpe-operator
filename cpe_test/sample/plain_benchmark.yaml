@@ -11,24 +11,15 @@ spec:
     backoffLimit: 0
     template:
       spec:
+        resources:
+          limits:
+            cpu: 500m
         containers:
           - name: coremark
-            image: {{ .image }}
+            image: 
             command:
             - sh
             - -c
-            - ./coremark-{{ .thread }}thread{{if ne .thread "1"}}s{{end}}.exe
+            - ./coremark-1thread.exe
         restartPolicy: Never
   parserKey: coremark
-  repetition: 2
-  iterationSpec:
-    iterations:
-    - name: thread
-      values:
-      - "1"
-      - "4"
-    configurations:
-    - name: image
-      values:
-      - "ghcr.io/sunya-ch/coremark:ubi"
-    sequential: true

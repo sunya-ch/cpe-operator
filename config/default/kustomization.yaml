@@ -25,6 +25,8 @@ bases:
 # [CERTMANAGER] To enable cert-manager, uncomment all sections with 'CERTMANAGER'. 'WEBHOOK' components are required.
 #- ../certmanager
 # [PROMETHEUS] To enable prometheus monitor, uncomment all sections with 'PROMETHEUS'.
+#   the corresponding rbac is linked to prometheus in openshift-monitoring namespace
+#   need to reload the promethus config after deployment `curl -X POST :9090/-/reload`
 - ../prometheus
 
 patchesStrategicMerge:
