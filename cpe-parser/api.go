@@ -32,6 +32,7 @@ var gromacsParser parser.Parser = parser.NewGromacsParser()
 var linpackParser parser.Parser = parser.NewLinpackParser()
 var timeParser parser.Parser = parser.NewTimeParser()
 var stressParser parser.Parser = parser.NewStressParser()
+var fmworkParser parser.Parser = parser.NewFMWorkParser()
 
 var parserMap map[string]parser.Parser = map[string]parser.Parser{
 	"codait":   codaitParser,
@@ -47,6 +48,7 @@ var parserMap map[string]parser.Parser = map[string]parser.Parser{
 	"linpack":  linpackParser,
 	"time":     timeParser,
 	"stress":   stressParser,
+	"fmwork":   fmworkParser,
 }
 
 /////////////////////////////////////////////
