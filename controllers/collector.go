@@ -29,10 +29,70 @@ var (
 	}
 )
 
+type ResultType int
+
+const (
+	SimpleFloatType      ResultType = 0
+	SliceType            ResultType = 1
+	ValueWithLabelsType  ResultType = 2
+	ValuesWithLabelsType ResultType = 3
+	InvalidType          ResultType = -1
+)
+
+func getResultType(vals interface{}) ResultType {
+	switch {
+	case reflect.TypeOf(vals).Kind() == reflect.Float64:
+		return SimpleFloatType
+	case reflect.TypeOf(vals).Kind() == reflect.Slice:
+		sliceVals, ok := vals.([]interface{})
+		if !ok || len(sliceVals) == 0 {
+			return InvalidType
+		}
+		if reflect.TypeOf(sliceVals[0]).Kind() == reflect.Float64 {
+			return SliceType
+		}
+		if mapVals, ok := sliceVals[0].(map[string]interface{}); ok {
+			if _, hasLabel := mapVals["Labels"]; !hasLabel {
+				return InvalidType
+			}
+			if _, hasValue := mapVals["Value"]; hasValue {
+				return ValueWithLabelsType
+			}
+			if _, hasValues := mapVals["Values"]; hasValues {
+				return ValuesWithLabelsType
+			}
+		}
+		return InvalidType
+	default:
+		return InvalidType
+	}
+}
+
 type ValueWithLabels struct {
 	Labels map[string]string
 	Value  float64
 }
+
+func getValueWithLabelsObjects(vals []interface{}) ([]ValueWithLabels, error) {
+	var result []ValueWithLabels
+	valsBytes, err := json.Marshal(vals)
+	if err != nil {
+		return result, err
+	}
+	err = json.Unmarshal(valsBytes, &result)
+	return result, err
+}
+
+func getValuesWithLabelsObjects(vals []interface{}) ([]ValuesWithLabels, error) {
+	var result []ValuesWithLabels
+	valsBytes, err := json.Marshal(vals)
+	if err != nil {
+		return result, err
+	}
+	err = json.Unmarshal(valsBytes, &result)
+	return result, err
+}
+
 type ValuesWithLabels struct {
 	Labels map[string]string
 	Values []float64
@@ -124,45 +184,52 @@ func (c *ResultCollector) getCommonLabels(benchmarkName, build, configID, scenar
 func (c *ResultCollector) updateGaugeVec(benchmarkName, build, configID, scenarioID, jobName, podName string, values map[string]interface{}) {
 	for key, vals := range values {
 		relabeledKey := c.relabelKey(key)
-		if reflect.TypeOf(vals).Kind() == reflect.Float64 {
+		switch getResultType(vals) {
+		case SimpleFloatType:
 			labels := c.getCommonLabels(benchmarkName, build, configID, scenarioID, jobName, podName)
 			labels["key"] = relabeledKey
 			labels["attrbs"] = ""
 			c.resultVectors.With(labels).Set(vals.(float64))
-		} else if valueWithLabelsArr, ok := vals.([]ValueWithLabels); ok {
-			for _, valueWithLabels := range valueWithLabelsArr {
+		case SliceType:
+			for index, val := range vals.([]interface{}) {
 				labels := c.getCommonLabels(benchmarkName, build, configID, scenarioID, jobName, podName)
 				labels["key"] = relabeledKey
-				labels["attrbs"] = c.labelMapToStr(valueWithLabels.Labels)
-				c.resultVectors.With(labels).Set(valueWithLabels.Value)
+				labels["attrbs"] = fmt.Sprintf("%d", index)
+				c.resultVectors.With(labels).Set(val.(float64))
 			}
-		} else if valuesWithLabelsArr, ok := vals.([]ValuesWithLabels); ok {
-			for _, valuesWithLabels := range valuesWithLabelsArr {
-				minVal, maxVal, avgVal := c.getStat(valuesWithLabels.Values)
-				minLabels := c.getCommonLabels(benchmarkName, build, configID, scenarioID, jobName, podName)
-				maxLables := c.getCommonLabels(benchmarkName, build, configID, scenarioID, jobName, podName)
-				avgLables := c.getCommonLabels(benchmarkName, build, configID, scenarioID, jobName, podName)
-				minLabels["key"] = relabeledKey
-				maxLables["key"] = relabeledKey
-				avgLables["key"] = relabeledKey
-				minLabels["attrbs"] = c.labelMapToStr(valuesWithLabels.Labels) + "_min"
-				maxLables["attrbs"] = c.labelMapToStr(valuesWithLabels.Labels) + "_max"
-				avgLables["attrbs"] = c.labelMapToStr(valuesWithLabels.Labels) + "_avg"
-				c.resultVectors.With(minLabels).Set(minVal)
-				c.resultVectors.With(maxLables).Set(maxVal)
-				c.resultVectors.With(avgLables).Set(avgVal)
-			}
-		} else if reflect.TypeOf(vals).Kind() == reflect.Slice {
-			for index, val := range vals.([]interface{}) {
-				if reflect.TypeOf(val).Kind() == reflect.Float64 {
+		case ValueWithLabelsType:
+			if valueWithLabelsArr, err := getValueWithLabelsObjects(vals.([]interface{})); err == nil {
+				for _, valueWithLabels := range valueWithLabelsArr {
 					labels := c.getCommonLabels(benchmarkName, build, configID, scenarioID, jobName, podName)
 					labels["key"] = relabeledKey
-					labels["attrbs"] = fmt.Sprintf("%d", index)
-					c.resultVectors.With(labels).Set(val.(float64))
+					labels["attrbs"] = c.labelMapToStr(valueWithLabels.Labels)
+					c.resultVectors.With(labels).Set(valueWithLabels.Value)
 				}
+			} else {
+				c.Log.Info(fmt.Sprintf("Failed to process result: %v", err))
 			}
-		} else {
-			c.Log.Info(fmt.Sprintf("Wrong key type: %v", vals))
+		case ValuesWithLabelsType:
+			if valuesWithLabelsArr, err := getValuesWithLabelsObjects(vals.([]interface{})); err == nil {
+				for _, valuesWithLabels := range valuesWithLabelsArr {
+					minVal, maxVal, avgVal := c.getStat(valuesWithLabels.Values)
+					minLabels := c.getCommonLabels(benchmarkName, build, configID, scenarioID, jobName, podName)
+					maxLables := c.getCommonLabels(benchmarkName, build, configID, scenarioID, jobName, podName)
+					avgLables := c.getCommonLabels(benchmarkName, build, configID, scenarioID, jobName, podName)
+					minLabels["key"] = relabeledKey
+					maxLables["key"] = relabeledKey
+					avgLables["key"] = relabeledKey
+					minLabels["attrbs"] = c.labelMapToStr(valuesWithLabels.Labels) + "_min"
+					maxLables["attrbs"] = c.labelMapToStr(valuesWithLabels.Labels) + "_max"
+					avgLables["attrbs"] = c.labelMapToStr(valuesWithLabels.Labels) + "_avg"
+					c.resultVectors.With(minLabels).Set(minVal)
+					c.resultVectors.With(maxLables).Set(maxVal)
+					c.resultVectors.With(avgLables).Set(avgVal)
+				}
+			} else {
+				c.Log.Info(fmt.Sprintf("Failed to process result: %v", err))
+			}
+		case InvalidType:
+			c.Log.Info(fmt.Sprintf("Wrong type: %v", vals))
 		}
 	}
 }
@@ -177,6 +244,7 @@ func (c *ResultCollector) Collect(ch chan<- prometheus.Metric) {
 	c.resultVectors.Reset()
 	for _, benchmark := range benchmarks.Items {
 		benchmarkName := benchmark.Name
+		c.Log.Info(fmt.Sprintf("Collecting %d result of %s/%s", len(benchmark.Status.Results), benchmark.Namespace, benchmarkName))
 		for _, result := range benchmark.Status.Results {
 			build := result.BuildID
 			configID := result.ConfigurationID
